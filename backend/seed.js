@@ -18,7 +18,7 @@ const seedCourses = async ()=>{
     { 
       title:"CCNP Enterprise", 
       description: "Advanced networking course covering enterprise routing, advanced switching, and network security.",
-      price:25000, 
+      price:15000, 
       duration:"8 weeks", 
       level:"Advanced" 
     },
@@ -53,7 +53,7 @@ const seedCourses = async ()=>{
     {
       title:"Cisco Troubleshooting Workshop",
       description: "Hands-on troubleshooting techniques for real-world networking problems.",
-      price:13000,
+      price:5000,
       duration:"4 weeks",
       level:"Advanced"
     },
