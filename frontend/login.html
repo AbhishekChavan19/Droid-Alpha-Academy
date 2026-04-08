@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Networking Academy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <div class="logo">🌐 Networking Academy</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="courses.html">Courses</a></li>
+    </ul>
+    <div class="auth-buttons">
+      <a href="signup.html" class="btn">Sign Up</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="form-container">
+      <h2>Login to Your Account</h2>
+      <div id="message"></div>
+      
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" required placeholder="Enter your email">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required placeholder="Enter your password">
+        </div>
+
+        <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Login</button>
+      </form>
+
+      <p style="text-align: center; margin-top: 1rem;">
+        Don't have an account? <a href="signup.html" style="color: #667eea; text-decoration: none; font-weight: bold;">Sign up here</a>
+      </p>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2024 Networking Academy. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = res.headers.get('content-type')?.includes('application/json')
+          ? await res.json()
+          : { message: await res.text() };
+
+        if (res.ok && data.token) {
+          localStorage.setItem('token', data.token);
+          showMessage('Login successful! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1500);
+        } else {
+          showMessage(data.message || data || 'Login failed. Please check your credentials.', 'danger');
+        }
+      } catch (error) {
+        showMessage('Error: ' + error.message, 'danger');
+      }
+    });
+
+    function showMessage(msg, type) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    }
+  </script>
+</body>
+</html>
