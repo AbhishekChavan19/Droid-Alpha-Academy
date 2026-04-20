@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - Droid Alpha Academy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <div class="logo">🌐 Droid Alpha Academy</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="courses.html">Courses</a></li>
+    </ul>
+    <div class="auth-buttons">
+      <a href="login.html" class="btn btn-secondary">Student Login</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="form-container">
+      <h2>Admin Login</h2>
+      <div id="message"></div>
+      <form id="adminLoginForm">
+        <div class="form-group">
+          <label for="email">Admin Email</label>
+          <input type="email" id="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required>
+        </div>
+        <button type="submit" class="btn" style="width: 100%;">Login as Admin</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_URL =
+      (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://droid-alpha-academy.onrender.com/api';
+
+    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch(`${API_URL}/admin/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Login failed');
+        }
+
+        localStorage.setItem('adminToken', data.adminToken);
+        localStorage.setItem('adminName', data.name || 'Admin');
+        window.location.href = 'admin-dashboard.html';
+      } catch (error) {
+        showMessage(error.message, 'danger');
+      }
+    });
+
+    function showMessage(msg, type) {
+      document.getElementById('message').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    }
+  </script>
+</body>
+</html>

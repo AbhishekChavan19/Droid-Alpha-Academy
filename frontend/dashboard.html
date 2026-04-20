@@ -63,6 +63,11 @@
         <p>No enrolled courses yet. <a href="courses.html" style="color: #667eea; text-decoration: none;">Explore courses</a></p>
       </div>
     </div>
+
+    <h2 style="color: white; margin: 2rem 0; margin-top: 3rem;">Course Notes</h2>
+    <div id="notesContainer" class="grid">
+      <div class="loader"></div>
+    </div>
   </div>
 
   <footer>
@@ -173,8 +178,47 @@
           `;
         }
 
+        await loadNotes(statsData.courses);
+
       } catch (error) {
         console.error('Error loading dashboard:', error);
+      }
+    }
+
+    async function loadNotes(courses) {
+      const notesContainer = document.getElementById('notesContainer');
+      if (!courses.length) {
+        notesContainer.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:white;">No notes yet. Enroll in a course first.</p>';
+        return;
+      }
+
+      try {
+        const noteRequests = courses.map((course) =>
+          fetch(`${API_URL}/notes/${course._id}`)
+            .then((res) => (res.ok ? res.json() : []))
+            .then((notes) => ({ course, notes }))
+            .catch(() => ({ course, notes: [] }))
+        );
+
+        const notesByCourse = await Promise.all(noteRequests);
+        const cards = notesByCourse
+          .flatMap(({ course, notes }) =>
+            notes.map((note) => `
+              <div class="card">
+                <h3>${note.title}</h3>
+                <p>Course: ${course.title}</p>
+                <a href="${note.pdfUrl}" target="_blank" rel="noopener noreferrer" class="btn">Open PDF</a>
+              </div>
+            `)
+          );
+
+        if (!cards.length) {
+          notesContainer.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:white;">No notes uploaded by admin yet.</p>';
+          return;
+        }
+        notesContainer.innerHTML = cards.join('');
+      } catch (error) {
+        notesContainer.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:white;">Could not load notes.</p>';
       }
     }
 

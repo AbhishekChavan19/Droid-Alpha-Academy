@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Droid Alpha Academy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <div class="logo">🌐 Droid Alpha Academy</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="courses.html">Courses</a></li>
+      <li><a href="admin-dashboard.html">Admin Dashboard</a></li>
+    </ul>
+    <div class="auth-buttons">
+      <span id="adminName" style="color: white; margin-right: 1rem;"></span>
+      <button class="btn btn-danger" onclick="logoutAdmin()">Logout</button>
+    </div>
+  </nav>
+
+  <header>
+    <h1>Admin Dashboard</h1>
+    <p>Manage students, announcements and notes</p>
+  </header>
+
+  <div class="container">
+    <section>
+      <h2>Users</h2>
+      <div id="usersContainer" class="grid"><div class="loader"></div></div>
+    </section>
+
+    <section>
+      <h2>Create Announcement</h2>
+      <div class="form-container">
+        <form id="announcementForm">
+          <div class="form-group">
+            <label for="announcementTitle">Title</label>
+            <input id="announcementTitle" required>
+          </div>
+          <div class="form-group">
+            <label for="announcementBody">Body</label>
+            <textarea id="announcementBody" required></textarea>
+          </div>
+          <button type="submit" class="btn" style="width:100%;">Post Announcement</button>
+        </form>
+      </div>
+    </section>
+
+    <section>
+      <h2>Add Course Note</h2>
+      <div class="form-container">
+        <form id="noteForm">
+          <div class="form-group">
+            <label for="noteTitle">Note Title</label>
+            <input id="noteTitle" required>
+          </div>
+          <div class="form-group">
+            <label for="noteCourseId">Course ID</label>
+            <input id="noteCourseId" required>
+          </div>
+          <div class="form-group">
+            <label for="notePdfUrl">PDF URL</label>
+            <input id="notePdfUrl" required>
+          </div>
+          <button type="submit" class="btn" style="width:100%;">Add Note</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const API_URL =
+      (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://droid-alpha-academy.onrender.com/api';
+
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      window.location.href = 'admin-login.html';
+    }
+
+    document.getElementById('adminName').textContent = localStorage.getItem('adminName') || 'Admin';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUsers();
+      document.getElementById('announcementForm').addEventListener('submit', createAnnouncement);
+      document.getElementById('noteForm').addEventListener('submit', createNote);
+    });
+
+    async function loadUsers() {
+      const container = document.getElementById('usersContainer');
+      try {
+        const res = await fetch(`${API_URL}/admin/users`, {
+          headers: { Authorization: adminToken }
+        });
+        const users = await res.json();
+        if (!res.ok) throw new Error(users.message || 'Failed to load users');
+        if (!users.length) {
+          container.innerHTML = '<p style="grid-column:1/-1;color:white;text-align:center;">No users found.</p>';
+          return;
+        }
+
+        container.innerHTML = users.map((u) => `
+          <div class="card">
+            <h3>${u.name || 'No Name'}</h3>
+            <p>${u.email}</p>
+            <p>Role: ${u.role || 'student'}</p>
+            <p>Enrolled: ${(u.enrolledCourses || []).length}</p>
+          </div>
+        `).join('');
+      } catch (error) {
+        container.innerHTML = `<p style="grid-column:1/-1;color:white;text-align:center;">${error.message}</p>`;
+      }
+    }
+
+    async function createAnnouncement(e) {
+      e.preventDefault();
+      const title = document.getElementById('announcementTitle').value;
+      const body = document.getElementById('announcementBody').value;
+
+      const res = await fetch(`${API_URL}/announcements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: adminToken
+        },
+        body: JSON.stringify({ title, body })
+      });
+
+      const data = await res.json();
+      alert(data.message || (res.ok ? 'Announcement created' : 'Failed to create announcement'));
+      if (res.ok) {
+        document.getElementById('announcementTitle').value = '';
+        document.getElementById('announcementBody').value = '';
+      }
+    }
+
+    async function createNote(e) {
+      e.preventDefault();
+      const title = document.getElementById('noteTitle').value;
+      const courseId = document.getElementById('noteCourseId').value;
+      const pdfUrl = document.getElementById('notePdfUrl').value;
+
+      const res = await fetch(`${API_URL}/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: adminToken
+        },
+        body: JSON.stringify({ title, courseId, pdfUrl })
+      });
+      const data = await res.json();
+      alert(data.message || (res.ok ? 'Note added' : 'Failed to add note'));
+      if (res.ok) {
+        document.getElementById('noteTitle').value = '';
+        document.getElementById('noteCourseId').value = '';
+        document.getElementById('notePdfUrl').value = '';
+      }
+    }
+
+    function logoutAdmin() {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminName');
+      window.location.href = 'admin-login.html';
+    }
+  </script>
+</body>
+</html>

@@ -74,7 +74,10 @@
   </footer>
 
   <script>
-    const API_URL = 'https://droid-alpha-academy.onrender.com/api';
+    const API_URL =
+      (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://droid-alpha-academy.onrender.com/api';
 
     document.addEventListener('DOMContentLoaded', () => {
       checkAuth();
@@ -139,7 +142,7 @@
                 ${course.level}
               </div>
               <div class="price">₹${course.price}</div>
-              <button class="btn" ${isEnrolled ? 'disabled' : ''} onclick="enrollCourse('${course._id}', ${course.price})">
+              <button class="btn" ${isEnrolled ? 'disabled' : ''} onclick="enrollCourse('${course._id}')">
                 ${isEnrolled ? 'Enrolled' : 'Enroll Now'}
               </button>
             </div>
@@ -152,7 +155,7 @@
       }
     }
 
-    async function enrollCourse(courseId, price) {
+    async function enrollCourse(courseId) {
       const token = localStorage.getItem('token');
       if (!token) {
         alert('Please login to enroll in courses');
@@ -161,21 +164,60 @@
       }
 
       try {
-        const response = await fetch(`${API_URL}/courses/enroll/${courseId}`, {
+        const orderRes = await fetch(`${API_URL}/payment/create-order`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': token
-          }
+          },
+          body: JSON.stringify({ courseId })
         });
 
-        const result = await response.json();
-        if (response.ok) {
-          alert(result.message || 'Enrolled successfully!');
-          loadCourses();
-        } else {
-          alert(result.message || 'Enrollment failed. Please try again.');
+        const orderData = await orderRes.json();
+        if (!orderRes.ok) {
+          alert(orderData.message || orderData.error || 'Could not create payment order.');
+          return;
         }
+
+        const options = {
+          key: orderData.key,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: 'Droid Alpha Academy',
+          description: `Enrollment for ${orderData.courseTitle}`,
+          order_id: orderData.orderId,
+          handler: async function (response) {
+            const verifyRes = await fetch(`${API_URL}/payment/verify`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
+              },
+              body: JSON.stringify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature
+              })
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok) {
+              alert(verifyData.message || 'Payment successful and enrolled.');
+              loadCourses();
+            } else {
+              alert(verifyData.message || 'Payment verification failed.');
+            }
+          },
+          prefill: {
+            name: localStorage.getItem('name') || ''
+          },
+          theme: {
+            color: '#667eea'
+          }
+        };
+
+        const razorpay = new Razorpay(options);
+        razorpay.open();
       } catch (error) {
         console.error('Error enrolling:', error);
         alert('Error: ' + error.message);
@@ -241,6 +283,7 @@
     }
   </script>
 
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="script.js"></script>
 
   <style>

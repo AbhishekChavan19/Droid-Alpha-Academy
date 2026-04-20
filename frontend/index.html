@@ -177,6 +177,7 @@
     </ul>
     <div class="auth-buttons">
       <span id="userNameDisplay" style="display:none; color: white; font-weight: bold; margin-right: 1rem;"></span>
+      <a href="admin-login.html" class="btn btn-secondary" id="adminBtn">Admin</a>
       <a href="login.html" class="btn btn-secondary" id="loginBtn">Login</a>
       <a href="signup.html" class="btn" id="signupBtn">Sign Up</a>
     </div>
@@ -312,11 +313,23 @@
     <a href="signup.html" class="btn" style="font-size: 1.1rem; padding: 1rem 2rem;">Sign Up Now - It's Free!</a>
   </div>
 
+  <div class="container" style="padding: 2rem 2rem 0;">
+    <h2 style="text-align:center; color:white;">Latest Announcements</h2>
+    <div id="announcementsContainer" class="grid">
+      <div class="loader"></div>
+    </div>
+  </div>
+
   <footer>
     <p>&copy; 2024 Droid Alpha Academy. Empowering Network Professionals Worldwide. All rights reserved.</p>
   </footer>
 
   <script>
+    const API_URL =
+      (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://droid-alpha-academy.onrender.com/api';
+
     // Smooth scroll for navigation
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function (e) {
@@ -342,7 +355,33 @@
           display.style.display = 'inline-block';
         }
       }
+      loadAnnouncements();
     });
+
+    async function loadAnnouncements() {
+      const container = document.getElementById('announcementsContainer');
+      try {
+        const res = await fetch(`${API_URL}/announcements`);
+        const announcements = await res.json();
+        if (!res.ok) {
+          throw new Error(announcements.message || 'Failed to load announcements');
+        }
+        if (!announcements.length) {
+          container.innerHTML = '<p style="grid-column: 1/-1; color: white; text-align:center;">No announcements yet.</p>';
+          return;
+        }
+
+        container.innerHTML = announcements.map((item) => `
+          <div class="card">
+            <h3>${item.title}</h3>
+            <p>${item.body}</p>
+            <small>Published: ${new Date(item.publishedAt).toLocaleString()}</small>
+          </div>
+        `).join('');
+      } catch (error) {
+        container.innerHTML = `<p style="grid-column: 1/-1; color: white; text-align:center;">${error.message}</p>`;
+      }
+    }
   </script>
 </body>
 </html>
